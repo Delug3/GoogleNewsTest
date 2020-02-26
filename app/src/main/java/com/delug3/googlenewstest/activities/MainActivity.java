@@ -1,13 +1,18 @@
 package com.delug3.googlenewstest.activities;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
 import com.delug3.googlenewstest.R;
@@ -29,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements ArticlesListAdapt
     private static final String TAG = "HEADLINES";
     private RecyclerView recyclerViewArticles;
     private ArticlesListAdapter articlesListAdapter;
-
+    private SearchView searchViewArticles;
     List<Articles> articlesList = new ArrayList<>();
 
     @Override
@@ -110,7 +115,51 @@ public class MainActivity extends AppCompatActivity implements ArticlesListAdapt
         startActivity(i);
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
 
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchViewArticles = (SearchView) menu.findItem(R.id.action_search)
+                .getActionView();
+        searchViewArticles.setSearchableInfo(searchManager
+                .getSearchableInfo(getComponentName()));
+        searchViewArticles.setMaxWidth(Integer.MAX_VALUE);
+
+        searchViewArticles.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                articlesListAdapter.getFilter().filter(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String query) {
+                articlesListAdapter.getFilter().filter(query);
+                return false;
+            }
+        });
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_search) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!searchViewArticles.isIconified()) {
+            searchViewArticles.setIconified(true);
+            return;
+        }
+        super.onBackPressed();
+    }
 
 
 }
