@@ -1,12 +1,14 @@
 package com.delug3.googlenewstest.adapters;
 
 import android.content.Context;
+import android.graphics.Movie;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.delug3.googlenewstest.R;
@@ -16,14 +18,16 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ArticlesListAdapter extends RecyclerView.Adapter<ArticlesListAdapter.ViewHolder> {
+public class ArticlesListAdapter extends RecyclerView.Adapter<ArticlesListAdapter.ViewHolder> implements Filterable {
 
         private List<Articles> articlesList;
         private Context context;
         private ItemClickListener mClickListener;
+        private List<Articles> articlesListFiltered;
 
         public ArticlesListAdapter(List<Articles> articlesList) {
-            this.articlesList = articlesList;
+
+                this.articlesList = articlesList;
 
         }
 
@@ -59,7 +63,39 @@ public class ArticlesListAdapter extends RecyclerView.Adapter<ArticlesListAdapte
 
         }
 
-        public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    @Override
+    public Filter getFilter() {
+        return new Filter() {
+            @Override
+            protected FilterResults performFiltering(CharSequence charSequence) {
+                String charString = charSequence.toString();
+                if (charString.isEmpty()) {
+                    articlesListFiltered = articlesList;
+                } else {
+                    List<Articles> filteredList = new ArrayList<>();
+                    for (Articles article : articlesList) {
+                        if (article.getTitle().toLowerCase().contains(charString.toLowerCase())) {
+                            filteredList.add(article);
+                        }
+                    }
+                    articlesListFiltered = filteredList;
+                }
+
+                FilterResults filterResults = new FilterResults();
+                filterResults.values = articlesListFiltered;
+                return filterResults;
+            }
+
+            @Override
+            protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+                articlesListFiltered = (ArrayList<Articles>) filterResults.values;
+
+                notifyDataSetChanged();
+            }
+        };
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
             private TextView textViewTitle;
             private TextView textViewDescription;
