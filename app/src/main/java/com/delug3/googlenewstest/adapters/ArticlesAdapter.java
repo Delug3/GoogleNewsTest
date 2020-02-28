@@ -1,7 +1,6 @@
 package com.delug3.googlenewstest.adapters;
 
 import android.content.Context;
-import android.graphics.Movie;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +8,8 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.delug3.googlenewstest.R;
@@ -18,17 +19,17 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ArticlesListAdapter extends RecyclerView.Adapter<ArticlesListAdapter.ViewHolder> implements Filterable {
+public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHolder> implements Filterable {
 
         private List<Articles> articlesList;
+        private List<Articles> articlesListFiltered;
         private Context context;
         private ItemClickListener mClickListener;
-        private List<Articles> articlesListFiltered;
 
-        public ArticlesListAdapter(List<Articles> articlesList) {
 
-                this.articlesList = articlesList;
-
+        public ArticlesAdapter(List<Articles> articlesList) {
+            this.articlesList = articlesList;
+            articlesListFiltered = new ArrayList<>(articlesList);
         }
 
         @Override
@@ -56,44 +57,82 @@ public class ArticlesListAdapter extends RecyclerView.Adapter<ArticlesListAdapte
             return articlesList.size();
         }
 
-        public void addArticlesList(ArrayList<Articles> listArticles) {
+    public void setArticlesList(Context context,final List<Articles> articlesList){
+        this.context = context;
+        if(this.articlesList == null){
+            this.articlesList = articlesList;
+            this.articlesListFiltered = articlesList;
+            notifyItemChanged(0, articlesListFiltered.size());
+        } else {
+            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return ArticlesAdapter.this.articlesList.size();
+                }
 
-            articlesList.addAll(listArticles);
-            notifyDataSetChanged();
+                @Override
+                public int getNewListSize() {
+                    return articlesList.size();
+                }
 
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                    return ArticlesAdapter.this.articlesList.get(oldItemPosition).getTitle() == articlesList.get(newItemPosition).getTitle();
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+
+                    Articles newArticle = ArticlesAdapter.this.articlesList.get(oldItemPosition);
+
+                    Articles oldArticle = articlesList.get(newItemPosition);
+
+                    return newArticle.getTitle() == oldArticle.getTitle() ;
+                }
+            });
+            this.articlesList = articlesList;
+            this.articlesListFiltered = articlesList;
+            result.dispatchUpdatesTo(this);
         }
+    }
 
     @Override
     public Filter getFilter() {
         return new Filter() {
             @Override
-            protected FilterResults performFiltering(CharSequence charSequence) {
-                String charString = charSequence.toString();
-                if (charString.isEmpty()) {
-                    articlesListFiltered = articlesList;
+            protected FilterResults performFiltering(CharSequence constraint) {
+                List<Articles> filteredList = new ArrayList<>();
+
+                if (constraint == null || constraint.length() == 0) {
+                    filteredList.addAll(articlesListFiltered);
                 } else {
-                    List<Articles> filteredList = new ArrayList<>();
-                    for (Articles article : articlesList) {
-                        if (article.getTitle().toLowerCase().contains(charString.toLowerCase())) {
-                            filteredList.add(article);
+                    String filterPattern = constraint.toString().toLowerCase().trim();
+
+                    for (Articles articles : articlesListFiltered) {
+                        if (articles.getTitle().toLowerCase().contains(filterPattern)) {
+                            filteredList.add(articles);
                         }
                     }
-                    articlesListFiltered = filteredList;
                 }
 
-                FilterResults filterResults = new FilterResults();
-                filterResults.values = articlesListFiltered;
-                return filterResults;
+                FilterResults results = new FilterResults();
+                results.values = filteredList;
+
+                return results;
             }
 
             @Override
-            protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
-                articlesListFiltered = (ArrayList<Articles>) filterResults.values;
-
+            protected void publishResults(CharSequence constraint, FilterResults results) {
+                articlesList.clear();
+                articlesList.addAll((List) results.values);
                 notifyDataSetChanged();
             }
         };
-    }
+        }
+
+
+
+
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
