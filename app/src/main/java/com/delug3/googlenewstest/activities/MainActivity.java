@@ -16,7 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.delug3.googlenewstest.R;
-import com.delug3.googlenewstest.adapters.ArticlesListAdapter;
+import com.delug3.googlenewstest.adapters.ArticlesAdapter;
 import com.delug3.googlenewstest.services.ApiBase;
 import com.delug3.googlenewstest.models.Articles;
 import com.delug3.googlenewstest.responses.ArticlesResponse;
@@ -29,39 +29,38 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements ArticlesListAdapter.ItemClickListener{
+public class MainActivity extends AppCompatActivity implements ArticlesAdapter.ItemClickListener{
 
     private static final String TAG = "HEADLINES";
-    private RecyclerView recyclerViewArticles;
-    private ArticlesListAdapter articlesListAdapter;
+    private ArticlesAdapter articlesAdapter;
     private SearchView searchViewArticles;
-    List<Articles> articlesList = new ArrayList<>();
+    private List<Articles> articlesList = new ArrayList<>();;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_articles);
 
-        recyclerViewArticles = findViewById(R.id.recycler_view_articles);
-
-        articlesListAdapter= new ArticlesListAdapter(articlesList);
-
-        recyclerViewArticles.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewArticles.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-        recyclerViewArticles.setHasFixedSize(true);
-        recyclerViewArticles.setAdapter(articlesListAdapter);
-
-        articlesListAdapter.setClickListener(this);
-
+        setUpRecyclerView();
 
         getData();
 
     }
 
-    private void getData()
+    private void setUpRecyclerView()
     {
 
+        RecyclerView recyclerViewArticles = findViewById(R.id.recycler_view_articles);
+        recyclerViewArticles.setHasFixedSize(true);
+        recyclerViewArticles.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewArticles.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        articlesAdapter = new ArticlesAdapter(articlesList);
+        recyclerViewArticles.setAdapter(articlesAdapter);
+        articlesAdapter.setClickListener(this);
+    }
 
+    private void getData()
+    {
         RetrofitService service = ApiBase.getClient().create(RetrofitService.class);
         Call<ArticlesResponse> articlesResponseCall= service.obtainArticlesList("us", RetrofitService.API_KEY);
 
@@ -81,24 +80,16 @@ public class MainActivity extends AppCompatActivity implements ArticlesListAdapt
                         Log.e(TAG, "Title: " + a.getTitle());
                         Log.e(TAG, "Description: " + a.getDescription());
                     }
-
-                    articlesListAdapter.addArticlesList(listArticles);
-
-
+                    articlesAdapter.setArticlesList(getApplicationContext(), listArticles);
 
                 }else{
-
                     Log.e(TAG, "onResponse: " + response.errorBody());
-
-
                 }
             }
 
             @Override
             public void onFailure(Call<ArticlesResponse> call, Throwable t) {
-
                 Log.e(TAG,"onFailure"+ t.getMessage());
-
             }
         });
 
@@ -129,13 +120,12 @@ public class MainActivity extends AppCompatActivity implements ArticlesListAdapt
         searchViewArticles.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                articlesListAdapter.getFilter().filter(query);
                 return false;
             }
 
             @Override
-            public boolean onQueryTextChange(String query) {
-                articlesListAdapter.getFilter().filter(query);
+            public boolean onQueryTextChange(String newText) {
+                articlesAdapter.getFilter().filter(newText);
                 return false;
             }
         });
