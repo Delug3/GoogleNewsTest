@@ -21,20 +21,21 @@ import java.util.List;
 
 public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHolder> implements Filterable {
 
+        Context context;
         private List<Articles> articlesList;
         private List<Articles> articlesListFiltered;
-        private Context context;
-        private ItemClickListener mClickListener;
+        private ArticlesAdapterListener listener;
 
-
-        public ArticlesAdapter(List<Articles> articlesList) {
+        public ArticlesAdapter(Context context, List articlesList, ArticlesAdapterListener listener) {
+            this.context = context;
+            this.listener = listener;
             this.articlesList = articlesList;
-            articlesListFiltered = new ArrayList<>(articlesList);
+            this.articlesListFiltered = articlesList;
         }
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_articles, parent, false);
+            View view = LayoutInflater.from(context).inflate(R.layout.item_articles, parent, false);
             return new ViewHolder(view);
 
         }
@@ -42,89 +43,54 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
 
-            Articles a = articlesList.get(position);
-            holder.textViewTitle.setText(a.getTitle());
-            holder.textViewDescription.setText(a.getDescription());
+            Articles articles = articlesListFiltered.get(position);
+            holder.textViewTitle.setText(articles.getTitle());
+            holder.textViewDescription.setText(articles.getDescription());
 
             //urltoImage: "urlToImage": "https://static01.nyt.com/images/2020/02/26/world/26virus-briefing-1sub/26virus-briefing-1sub-facebookJumbo-v2.jpg",
             Picasso.get()
-                    .load(a.getUrlToImage())
+                    .load(articles.getUrlToImage())
                     .into(holder.imageViewUrl);
         }
 
         @Override
         public int getItemCount() {
-            return articlesList.size();
+
+            return articlesListFiltered.size();
+
         }
 
-    public void setArticlesList(Context context,final List<Articles> articlesList){
-        this.context = context;
-        if(this.articlesList == null){
-            this.articlesList = articlesList;
-            this.articlesListFiltered = articlesList;
-            notifyItemChanged(0, articlesListFiltered.size());
-        } else {
-            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                @Override
-                public int getOldListSize() {
-                    return ArticlesAdapter.this.articlesList.size();
-                }
-
-                @Override
-                public int getNewListSize() {
-                    return articlesList.size();
-                }
-
-                @Override
-                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                    return ArticlesAdapter.this.articlesList.get(oldItemPosition).getTitle() == articlesList.get(newItemPosition).getTitle();
-                }
-
-                @Override
-                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-
-                    Articles newArticle = ArticlesAdapter.this.articlesList.get(oldItemPosition);
-
-                    Articles oldArticle = articlesList.get(newItemPosition);
-
-                    return newArticle.getTitle() == oldArticle.getTitle() ;
-                }
-            });
-            this.articlesList = articlesList;
-            this.articlesListFiltered = articlesList;
-            result.dispatchUpdatesTo(this);
-        }
-    }
 
     @Override
     public Filter getFilter() {
         return new Filter() {
             @Override
-            protected FilterResults performFiltering(CharSequence constraint) {
-                List<Articles> filteredList = new ArrayList<>();
+            protected FilterResults performFiltering(CharSequence charSequence) {
+                String charString = charSequence.toString();
 
-                if (constraint == null || constraint.length() == 0) {
-                    filteredList.addAll(articlesListFiltered);
+                if (charString.isEmpty()) {
+                    articlesListFiltered = articlesList;
                 } else {
-                    String filterPattern = constraint.toString().toLowerCase().trim();
+                    List filteredList = new ArrayList<>();
+                    //String filterPattern = charSequence.toString().toLowerCase().trim();
 
-                    for (Articles articles : articlesListFiltered) {
-                        if (articles.getTitle().toLowerCase().contains(filterPattern)) {
-                            filteredList.add(articles);
+                    for (Articles row : articlesList) {
+                        if (row.getTitle().toLowerCase().contains(charString.toLowerCase())) {
+                            filteredList.add(row);
                         }
                     }
+                    articlesListFiltered = filteredList;
                 }
 
-                FilterResults results = new FilterResults();
-                results.values = filteredList;
+                FilterResults filterResults = new FilterResults();
+                filterResults.values = articlesListFiltered;
 
-                return results;
+                return filterResults;
             }
 
             @Override
-            protected void publishResults(CharSequence constraint, FilterResults results) {
-                articlesList.clear();
-                articlesList.addAll((List) results.values);
+            protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+                articlesListFiltered = (ArrayList) filterResults.values;
                 notifyDataSetChanged();
             }
         };
@@ -132,9 +98,7 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
 
 
 
-
-
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class ViewHolder extends RecyclerView.ViewHolder {
 
             private TextView textViewTitle;
             private TextView textViewDescription;
@@ -146,37 +110,18 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
                 textViewTitle = itemView.findViewById(R.id.text_view_articles_title);
                 textViewDescription = itemView.findViewById(R.id.text_view_articles_description);
                 imageViewUrl = itemView.findViewById(R.id.image_view_articles);
-
-                itemView.setOnClickListener(this);
+                itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        listener.onArticleSelected(articlesListFiltered.get(getAdapterPosition()));
+                    }
+                });
             }
-
-            @Override
-            public void onClick(View view) {
-                if (mClickListener != null) mClickListener.onItemClick(view, getAdapterPosition());
-            }
-
         }
 
-    // Getting data at click position
-    public Articles getItem(int id) {
-        return articlesList.get(id);
-    }
-
-
-    public void setContext(Context context) {
-        this.context = context;
-    }
-
-    // Allows clicks events to be caught
-    public void setClickListener(ItemClickListener itemClickListener) {
-        this.mClickListener = itemClickListener;
-    }
-
     // Parent activity will implement this method to respond to click events
-    public interface ItemClickListener {
-        void onItemClick(View view, int position);
+    public interface ArticlesAdapterListener {
+        void onArticleSelected(Articles articles);
     }
-
-
 
 }
