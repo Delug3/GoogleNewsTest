@@ -17,6 +17,7 @@ import android.view.View;
 
 import com.delug3.googlenewstest.R;
 import com.delug3.googlenewstest.adapters.ArticlesAdapter;
+import com.delug3.googlenewstest.listeners.RecyclerTouchListener;
 import com.delug3.googlenewstest.services.ApiBase;
 import com.delug3.googlenewstest.models.Articles;
 import com.delug3.googlenewstest.responses.ArticlesResponse;
@@ -29,12 +30,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements ArticlesAdapter.ItemClickListener{
+public class MainActivity extends AppCompatActivity implements ArticlesAdapter.ArticlesAdapterListener {
 
     private static final String TAG = "HEADLINES";
-    private ArticlesAdapter articlesAdapter;
-    private SearchView searchViewArticles;
-    private List<Articles> articlesList = new ArrayList<>();;
+    RecyclerView recyclerViewArticles;
+    ArticlesAdapter articlesAdapter;
+    SearchView searchViewArticles;
+    List<Articles> articlesList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,18 +47,31 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.I
 
         getData();
 
+        recyclerViewArticles.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), new RecyclerTouchListener.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, int position) {
+
+                final Articles articles = (Articles) articlesList.get(position);
+                Intent intent = new Intent(MainActivity.this,ArticlesDetailsActivity.class);
+                intent.putExtra("ARTICLE_TITLE",articles.getTitle());
+                startActivity(intent);
+            }
+        }));
     }
 
     private void setUpRecyclerView()
     {
 
-        RecyclerView recyclerViewArticles = findViewById(R.id.recycler_view_articles);
+        recyclerViewArticles = findViewById(R.id.recycler_view_articles);
         recyclerViewArticles.setHasFixedSize(true);
-        recyclerViewArticles.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewArticles.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-        articlesAdapter = new ArticlesAdapter(articlesList);
-        recyclerViewArticles.setAdapter(articlesAdapter);
-        articlesAdapter.setClickListener(this);
+        recyclerViewArticles.setLayoutManager(new LinearLayoutManager(this));
+
+        articlesList = new ArrayList<>();
+
+        articlesAdapter = new ArticlesAdapter(this,articlesList,this);
+
+
     }
 
     private void getData()
@@ -73,14 +88,10 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.I
                     ArticlesResponse articlesResponse = response.body();
                     ArrayList<Articles> listArticles = articlesResponse.getArticles();
 
-                    //Test articles list
-                    for (int i = 0; i < listArticles.size(); i++)
-                    {
-                        Articles a = listArticles.get(i);
-                        Log.e(TAG, "Title: " + a.getTitle());
-                        Log.e(TAG, "Description: " + a.getDescription());
-                    }
-                    articlesAdapter.setArticlesList(getApplicationContext(), listArticles);
+                    articlesList.addAll(listArticles);
+
+                    articlesAdapter.notifyDataSetChanged();
+                    recyclerViewArticles.setAdapter(articlesAdapter);
 
                 }else{
                     Log.e(TAG, "onResponse: " + response.errorBody());
@@ -96,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.I
     }
 
 
-    @Override
+    /*@Override
     public void onItemClick(View view, int position) {
         Intent i = new Intent(MainActivity.this, ArticlesDetailsActivity.class);
         i.putExtra("ARTICLE_TITLE", articlesList.get(position).getTitle());
@@ -105,6 +116,7 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.I
         i.putExtra("ARTICLE_DATE", articlesList.get(position).getPublishedAt());
         startActivity(i);
     }
+*/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -124,8 +136,8 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.I
             }
 
             @Override
-            public boolean onQueryTextChange(String newText) {
-                articlesAdapter.getFilter().filter(newText);
+            public boolean onQueryTextChange(String query) {
+                articlesAdapter.getFilter().filter(query);
                 return false;
             }
         });
@@ -151,6 +163,9 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.I
         super.onBackPressed();
     }
 
+    @Override
+    public void onArticleSelected(Articles articles) {
+           }
 
 }
 
