@@ -17,7 +17,6 @@ import android.view.View;
 
 import com.delug3.googlenewstest.R;
 import com.delug3.googlenewstest.adapters.ArticlesAdapter;
-import com.delug3.googlenewstest.listeners.RecyclerTouchListener;
 import com.delug3.googlenewstest.services.ApiBase;
 import com.delug3.googlenewstest.models.Articles;
 import com.delug3.googlenewstest.responses.ArticlesResponse;
@@ -30,7 +29,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements ArticlesAdapter.ArticlesAdapterListener {
+public class MainActivity extends AppCompatActivity implements ArticlesAdapter.ItemClickListener {
 
     private static final String TAG = "HEADLINES";
     RecyclerView recyclerViewArticles;
@@ -47,21 +46,10 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.A
 
         getData();
 
-        recyclerViewArticles.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), new RecyclerTouchListener.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-
-                final Articles articles = (Articles) articlesList.get(position);
-                Intent intent = new Intent(MainActivity.this,ArticlesDetailsActivity.class);
-                intent.putExtra("ARTICLE_TITLE",articles.getTitle());
-                startActivity(intent);
-            }
-        }));
     }
 
     private void setUpRecyclerView()
     {
-
         recyclerViewArticles = findViewById(R.id.recycler_view_articles);
         recyclerViewArticles.setHasFixedSize(true);
         recyclerViewArticles.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
@@ -71,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.A
 
         articlesAdapter = new ArticlesAdapter(this,articlesList,this);
 
-
+        articlesAdapter.setClickListener(this);
     }
 
     private void getData()
@@ -106,17 +94,17 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.A
 
     }
 
-
-    /*@Override
+    @Override
     public void onItemClick(View view, int position) {
-        Intent i = new Intent(MainActivity.this, ArticlesDetailsActivity.class);
-        i.putExtra("ARTICLE_TITLE", articlesList.get(position).getTitle());
-        i.putExtra("ARTICLE_CONTENT", articlesList.get(position).getContent());
-        i.putExtra("ARTICLE_IMAGE", articlesList.get(position).getUrlToImage());
-        i.putExtra("ARTICLE_DATE", articlesList.get(position).getPublishedAt());
-        startActivity(i);
+        Articles articles = (Articles) articlesAdapter.getFilteredItem(position);
+
+        Intent intent = new Intent(MainActivity.this,ArticlesDetailsActivity.class);
+        intent.putExtra("ARTICLE_TITLE", articles.getTitle());
+        intent.putExtra("ARTICLE_CONTENT", articles.getContent());
+        intent.putExtra("ARTICLE_IMAGE", articles.getUrlToImage());
+        intent.putExtra("ARTICLE_DATE", articles.getPublishedAt());
+        startActivity(intent);
     }
-*/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -163,9 +151,6 @@ public class MainActivity extends AppCompatActivity implements ArticlesAdapter.A
         super.onBackPressed();
     }
 
-    @Override
-    public void onArticleSelected(Articles articles) {
-           }
 
 }
 
