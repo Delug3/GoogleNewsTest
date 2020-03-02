@@ -9,7 +9,6 @@ import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.delug3.googlenewstest.R;
@@ -24,11 +23,11 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
         Context context;
         private List<Articles> articlesList;
         private List<Articles> articlesListFiltered;
-        private ArticlesAdapterListener listener;
+        private ItemClickListener itemClickListener;
 
-        public ArticlesAdapter(Context context, List articlesList, ArticlesAdapterListener listener) {
+        public ArticlesAdapter(Context context, List articlesList, ItemClickListener itemClickListener) {
             this.context = context;
-            this.listener = listener;
+            this.itemClickListener = itemClickListener;
             this.articlesList = articlesList;
             this.articlesListFiltered = articlesList;
         }
@@ -60,6 +59,11 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
 
         }
 
+    // Getting filtered data at click position
+    public Articles getFilteredItem(int id) {
+        return articlesListFiltered.get(id);
+    }
+
 
     @Override
     public Filter getFilter() {
@@ -72,11 +76,11 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
                     articlesListFiltered = articlesList;
                 } else {
                     List filteredList = new ArrayList<>();
-                    //String filterPattern = charSequence.toString().toLowerCase().trim();
+                    String filterPattern = charSequence.toString().toLowerCase().trim();
 
-                    for (Articles row : articlesList) {
-                        if (row.getTitle().toLowerCase().contains(charString.toLowerCase())) {
-                            filteredList.add(row);
+                    for (Articles articles : articlesList) {
+                        if (articles.getTitle().toLowerCase().contains(filterPattern)) {
+                            filteredList.add(articles);
                         }
                     }
                     articlesListFiltered = filteredList;
@@ -98,7 +102,7 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
 
 
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
             private TextView textViewTitle;
             private TextView textViewDescription;
@@ -110,18 +114,23 @@ public class ArticlesAdapter extends RecyclerView.Adapter<ArticlesAdapter.ViewHo
                 textViewTitle = itemView.findViewById(R.id.text_view_articles_title);
                 textViewDescription = itemView.findViewById(R.id.text_view_articles_description);
                 imageViewUrl = itemView.findViewById(R.id.image_view_articles);
-                itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        listener.onArticleSelected(articlesListFiltered.get(getAdapterPosition()));
-                    }
-                });
-            }
-        }
+                itemView.setOnClickListener(this);
 
+            }
+        @Override
+        public void onClick(View view) {
+            if (itemClickListener != null) itemClickListener.onItemClick(view, getAdapterPosition());
+        }
+    }
+
+
+    // allows clicks events to be caught
+    public void setClickListener(ItemClickListener itemClickListener) {
+        this.itemClickListener = itemClickListener;
+    }
     // Parent activity will implement this method to respond to click events
-    public interface ArticlesAdapterListener {
-        void onArticleSelected(Articles articles);
+    public interface ItemClickListener {
+        void onItemClick(View view, int adapterPosition);
     }
 
 }
