@@ -19,10 +19,7 @@ public class ArticlesDetailsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_articles_details);
 
-        imageViewDetailsUrl = findViewById(R.id.image_view_details_url);
-        textViewDetailsTitle = findViewById(R.id.text_view_details_article_title);
-        textViewDetailsContent = findViewById(R.id.text_view_detais_article_content);
-        textViewDetailsDate = findViewById(R.id.text_view_details_article_date);
+        initViews();
 
         String title, content, date, imageUrl;
         if (savedInstanceState == null) {
@@ -39,14 +36,25 @@ public class ArticlesDetailsActivity extends AppCompatActivity {
                 date = extras.getString("ARTICLE_DATE");
                 imageUrl = extras.getString("ARTICLE_IMAGE");
 
-                textViewDetailsTitle.setText(title);
-                textViewDetailsContent.setText(content);
-                textViewDetailsDate.setText(date);
+                setContent(title, content, date, imageUrl);
 
-                Picasso.get().load(imageUrl).into(imageViewDetailsUrl);
             }
 
         }
+    }
+
+    private void initViews(){
+        imageViewDetailsUrl = findViewById(R.id.image_view_details_url);
+        textViewDetailsTitle = findViewById(R.id.text_view_details_article_title);
+        textViewDetailsContent = findViewById(R.id.text_view_detais_article_content);
+        textViewDetailsDate = findViewById(R.id.text_view_details_article_date);
+    }
+
+    private void setContent(String title, String content, String date, String imageUrl){
+        textViewDetailsTitle.setText(title);
+        textViewDetailsContent.setText(content);
+        textViewDetailsDate.setText(date);
+        Picasso.get().load(imageUrl).into(imageViewDetailsUrl);
     }
 
 }
